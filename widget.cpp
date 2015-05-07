@@ -27,10 +27,24 @@ void Widget::mousePressEvent(QMouseEvent *e){
     mouseX = e->pos().x();
 }
 
+void Widget::resizeEvent(QResizeEvent *e){
+    WIDTH = width();
+    HEIGHT = height();
+
+    delete image;
+    image = new QImage(WIDTH, HEIGHT, QImage::Format_RGBA8888);
+    uchar * ptr = (uchar*) image->bits();
+    for(int i = 0; i < WIDTH; i++){
+        for(int j = 0; j < HEIGHT; j++){
+            ptr[j*WIDTH*4 + i*4 + 3] = 255;
+        }
+    }
+}
+
 void Widget::paintEvent(QPaintEvent *){
     float dt = clock() - time;
     time = clock();
-    frame+=mouseX / 20.0;
+    frame+=mouseX / 20.0f;
     QPainter p(this);
     uchar * ptr = (uchar*) image->bits();
     for(int j = 0; j < HEIGHT; j++){

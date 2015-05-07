@@ -7,6 +7,7 @@
 #include <math.h>
 #include <QDebug>
 #include <QMouseEvent>
+#include <QResizeEvent>
 
 #include <time.h>
 
@@ -24,6 +25,7 @@ public:
     int HEIGHT = 400;
     QImage * image;
     void mousePressEvent(QMouseEvent *e);
+    void resizeEvent(QResizeEvent *e);
     int mouseX;
     int time;
 };
