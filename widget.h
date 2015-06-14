@@ -4,12 +4,16 @@
 #include <QWidget>
 #include <QPainter>
 #include <QTimer>
-#include <math.h>
+#include <cmath>
 #include <QDebug>
 #include <QMouseEvent>
 #include <QResizeEvent>
+#include <vector>
+#include <QCheckBox>
 
 #include <time.h>
+
+using namespace std;
 
 class Widget : public QWidget
 {
@@ -17,17 +21,22 @@ class Widget : public QWidget
 
 public:
     Widget(QWidget *parent = 0);
-    ~Widget();
     void paintEvent(QPaintEvent *);
-    float frame = 0;
-    QTimer * timer;
-    int WIDTH = 600;
-    int HEIGHT = 400;
-    QImage * image;
     void mousePressEvent(QMouseEvent *e);
     void resizeEvent(QResizeEvent *e);
-    int mouseX;
+    QTimer * timer;
+    QImage * image;
+    QImage * photo;
+    float frame = -10;
+    int WIDTH = 600;
+    int HEIGHT = 400;
+    float centerX, centerY;
+    int mouseX = 1;
     int time;
+    vector< vector< float> > atan;
+
+    QCheckBox *checkbox;
+
 };
 
 #endif // WIDGET_H

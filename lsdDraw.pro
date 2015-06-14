@@ -25,3 +25,5 @@ QMAKE_CXXFLAGS_RELEASE -= -O2
 # add the desired -O3 if not present
 QMAKE_CXXFLAGS_RELEASE *= -O3
 QMAKE_CXXFLAGS += -O3
+
+INCLUDEPATH += /usr/include/c++/4.3
