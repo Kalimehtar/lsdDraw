@@ -163,9 +163,15 @@ Widget::Widget(QWidget *parent) : QWidget(parent){
         }
     }
 
-    photo = new QImage("st.png");
     checkbox = new QCheckBox("Make rainbow", this);
     checkbox->setGeometry(5,5,120,15);
+
+    makeGlitch = new QCheckBox("Make glitch", this);
+    makeGlitch->setGeometry(5,25,120,15);
+
+    slider = new QSlider(Qt::Horizontal, this);
+    slider->setRange(0,100);
+    slider->setGeometry(5,45,120,15);
     //connect(checkbox, SIGNAL(toggled(bool))
 }
 
@@ -184,8 +190,7 @@ void Widget::resizeEvent(QResizeEvent *e){
 //    image = new QImage("st.png");
 //    image = &image->scaled(WIDTH, HEIGHT);
 
-    QPainter pp(image);
-    pp.drawImage(0,0,*photo);
+
     uchar * ptr = (uchar*) image->bits();
     for(int i = 0; i < WIDTH; i++){
         for(int j = 0; j < HEIGHT; j++){
@@ -202,7 +207,9 @@ void Widget::resizeEvent(QResizeEvent *e){
         float distX = (centerY - y)*(centerY - y);
         for(int x = 0; x < width(); x++){
             float dist =(distX + (centerX - x)*(centerX - x)) * 0.04;
-            atan[y][x] = atan2(centerY - y, centerX - x) + 3.1415 + mysin(dist*dist*0.0000005);
+            atan[y][x] = atan2(centerY - y, centerX - x)  + mysin(dist*dist*0.0000005);
+            //atan[y][x] = atan2(centerY - y, centerX - x) + 3.1415926;
+
         }
     }
 
@@ -211,27 +218,24 @@ void Widget::resizeEvent(QResizeEvent *e){
 void Widget::paintEvent(QPaintEvent *){
     float dt = clock() - time;
     time = clock();
-    frame += mouseX / 10000.0f;
+    frame += pow(2.7, (slider->value() - 50)/15.0f )/500.0f;
+    //frame += 0.0001f;
 
-//    centerX = WIDTH/2 + 100*mysin(dt*0.0001);
-//    centerY = HEIGHT/2 + 100*mycos(dt*0.0001);
+
 
     float cur_frame = frame + 0.5*mysin(frame);
-    int sss = 0 + (int)3*(1+mysin(frame*0.01));
+    int GlitchPower = 0 + (int)3*(1+mysin(frame*0.01));
 
     uchar * ptr = (uchar*) image->bits();
     for(int j = 0; j < HEIGHT-3; j++){
         float distX = (centerY - j)*(centerY - j);
         for(int i = 0; i < WIDTH; i++){
-
-            //float dist =  ((centerY - j)*(centerY - j)+(centerX - i)*(centerX - i))*0.04;
             float dist =((distX + (centerX - i)*(centerX - i)) * 0.04);
-
-            //float angle = fmod(atan2(centerY - j, centerX - i) + frame + mysin(dist*dist*0.0000005) , mysin(frame));
             float angle = fmod (atan[j][i] + frame  , 3*abs(mysin(frame))+0.1);
 
 
-            float power = mysin((angle  ) * dist * 0.005);
+
+            float power = mysin(angle * dist * 0.005);
             float tmp = sqrt(dist) * 0.223 + cur_frame + angle*4;
 
 
@@ -240,14 +244,12 @@ void Widget::paintEvent(QPaintEvent *){
             rgb color;
             color.r = (1+mysin(tmp)) * 127;
             color.g = (power+ 1) * 127;
-            //color.g = rand() % 127 ;
             color.b = (1+(mycos(tmp*2))) * 127;
             if(checkbox->isChecked()){
                 hsv colorH = rgb2hsv(color);
                 colorH.h = fmod(colorH.h+frame , 360);
-                //colorH.h = colorH.h * 0.9 + (power+ 1) * 127 * 0.1;
-                //colorH.h = 0.2;
                 colorH.v = 255;
+                colorH.s = colorH.s*0.5 + 0.5;
                 color = hsv2rgb(colorH);
             }
             //ptr[i*4] = (1+mysin(tmp + fast_rand() % 2)) * 127;
@@ -256,26 +258,20 @@ void Widget::paintEvent(QPaintEvent *){
             //ptr[i*4 + 2] = (1+(mycos(tmp*2))) * 127;
 
 
+            ptr[i*4     ] = 127 + sin(angle)*127;
+            //ptr[i*4 + 1 ] = angle*30;
 
             ptr[i*4     ] = color.r;
             ptr[i*4 + 1 ] = color.g;
             ptr[i*4 + 2 ] = color.b;
 
-//            if(i > 10 && i < WIDTH-10 && j > 10 && j < HEIGHT - 10){
-//                ptr[i*4     ] = color.r;
-//                ptr[i*4 + 1 ] = color.g;
-//                ptr[i*4 + 2 ] = color.b;
-//            }else{
-//                ptr[i*4     ] = color.r;
-//                ptr[i*4 + 1 ] = color.g;
-//                ptr[i*4 + 2 ] = color.b;
-//            }
-
-
 
         }
-        //ptr = ptr + WIDTH*4 + (fast_rand() % (sss*2+1) - sss)*4; // ГЛИТЧ ЭФФЕКТ
-        ptr = ptr + WIDTH*4;
+        if(makeGlitch->isChecked()){
+            ptr = ptr + WIDTH*4 + (rand() % (GlitchPower*2+1) - GlitchPower)*4; // ГЛИТЧ ЭФФЕКТ
+        }else{
+            ptr = ptr + WIDTH*4;
+        }
     }
 
     QPainter p(this);
@@ -326,8 +322,10 @@ void Widget::paintEvent(QPaintEvent *){
 //    for(int i = 0; i < 200; i++){
 //        p.drawEllipse(i*3,300 + 100*sin(i*0.05),4,4);
 //    }
-    p.setBrush(QBrush(QColor(0,0,0)));
+    p.setBrush(QBrush(QColor(50,50,50)));
+    p.setPen(QPen(QColor(35,35,35)));
+    p.drawRect(0,0,130,80);
+
     p.setPen(QPen(QColor(255,255,255)));
-    p.drawRect(0,0,120,50);
-    p.drawText(5,40,"FPS : " + QString::number(1000/(dt/1000.0)));
+    p.drawText(5,75,"FPS : " + QString::number(1000/(dt/1000.0)));
 }

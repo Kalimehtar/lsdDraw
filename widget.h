@@ -10,6 +10,7 @@
 #include <QResizeEvent>
 #include <vector>
 #include <QCheckBox>
+#include <QSlider>
 
 #include <time.h>
 
@@ -26,7 +27,6 @@ public:
     void resizeEvent(QResizeEvent *e);
     QTimer * timer;
     QImage * image;
-    QImage * photo;
     float frame = -10;
     int WIDTH = 600;
     int HEIGHT = 400;
@@ -36,6 +36,9 @@ public:
     vector< vector< float> > atan;
 
     QCheckBox *checkbox;
+    QCheckBox *makeGlitch;
+    QSlider *slider;
+    //QSlider *sliderS;
 
 };
 
