@@ -28,8 +28,8 @@ public:
     QTimer * timer;
     QImage * image;
     float frame = -10;
-    int WIDTH = 600;
-    int HEIGHT = 400;
+    int WIDTH;
+    int HEIGHT;
     float centerX, centerY;
     int mouseX = 1;
     int time;
@@ -38,7 +38,6 @@ public:
     QCheckBox *checkbox;
     QCheckBox *makeGlitch;
     QSlider *slider;
-    //QSlider *sliderS;
 
 };
 

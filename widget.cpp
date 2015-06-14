@@ -1,29 +1,7 @@
-
 #include "widget.h"
 
 
-#define POOL_SIZE (1024 * 64)
-
-int pool[POOL_SIZE];
-unsigned pool_position1 = 0;
-unsigned pool_position2 = 0;
-
-void init_pool(void){
-    int i = 0;
-    for (; i < POOL_SIZE; i++){
-        pool[i] = rand();
-    }
-}
-
-int fast_rand(void){
-    return pool[(pool_position1++) % POOL_SIZE] + pool[(pool_position2 += 37) % POOL_SIZE];
-}
-
-
-
 float mysin(float x){
-    //return sin(x);
-    //x = x - 3.1415926 * (int)(x / 3.1415926);
     x = x - 6.2831852 * (int)(x * 0.159154946);
     if(x > 3.1415){x = -x + 3.1415926;}
     return x - x*x*x/6 +  x*x*x*x*x/151;
@@ -31,9 +9,6 @@ float mysin(float x){
 
 float mycos(float x){
     return mysin(x + 3.14159);
-    //return cos(x);
-    //x = x - 6.2831852 * (int)(x * 0.159154946);
-    //return 1 - x*x/2 + x*x*x*x/33;
 }
 
 typedef struct {
@@ -150,6 +125,7 @@ rgb hsv2rgb(hsv in)
 
 
 Widget::Widget(QWidget *parent) : QWidget(parent){
+    setAttribute(Qt::WA_NoBackground);
     resize(640,480);
     image = new QImage(WIDTH, HEIGHT, QImage::Format_RGBA8888);
     timer = new QTimer(this);
@@ -166,17 +142,16 @@ Widget::Widget(QWidget *parent) : QWidget(parent){
     checkbox = new QCheckBox("Make rainbow", this);
     checkbox->setGeometry(5,5,120,15);
 
-    makeGlitch = new QCheckBox("Make glitch", this);
+    makeGlitch = new QCheckBox("Make glitch", this); // GLITCH эффект напоминающий помехи на ТВ
     makeGlitch->setGeometry(5,25,120,15);
 
-    slider = new QSlider(Qt::Horizontal, this);
+    slider = new QSlider(Qt::Horizontal, this); // Скорость изменения
     slider->setRange(0,100);
+    slider->setValue(50);
     slider->setGeometry(5,45,120,15);
-    //connect(checkbox, SIGNAL(toggled(bool))
 }
 
 void Widget::mousePressEvent(QMouseEvent *e){
-    mouseX = e->pos().x();
     centerX = e->pos().x();
     centerY = e->pos().y();
 }
@@ -187,16 +162,7 @@ void Widget::resizeEvent(QResizeEvent *e){
 
     delete image;
     image = new QImage(WIDTH, HEIGHT, QImage::Format_RGBA8888);
-//    image = new QImage("st.png");
-//    image = &image->scaled(WIDTH, HEIGHT);
-
-
-    uchar * ptr = (uchar*) image->bits();
-    for(int i = 0; i < WIDTH; i++){
-        for(int j = 0; j < HEIGHT; j++){
-            ptr[j*WIDTH*4 + i*4 + 3] = 255;
-        }
-    }
+    image->fill(QColor("red")); // Заполняем изображение любым цветом, потому что изначально альфа канал равен 0
 
     centerX = WIDTH/2;
     centerY = HEIGHT/2;
@@ -208,67 +174,54 @@ void Widget::resizeEvent(QResizeEvent *e){
         for(int x = 0; x < width(); x++){
             float dist =(distX + (centerX - x)*(centerX - x)) * 0.04;
             atan[y][x] = atan2(centerY - y, centerX - x)  + mysin(dist*dist*0.0000005);
-            //atan[y][x] = atan2(centerY - y, centerX - x) + 3.1415926;
-
         }
     }
-
 }
 
 void Widget::paintEvent(QPaintEvent *){
     float dt = clock() - time;
     time = clock();
+
     frame += pow(2.7, (slider->value() - 50)/15.0f )/500.0f;
-    //frame += 0.0001f;
-
-
 
     float cur_frame = frame + 0.5*mysin(frame);
-    int GlitchPower = 0 + (int)3*(1+mysin(frame*0.01));
+    int GlitchPower = floor(2*(1+sin(frame*10)));
+    qDebug() << GlitchPower;
 
     uchar * ptr = (uchar*) image->bits();
     for(int j = 0; j < HEIGHT-3; j++){
         float distX = (centerY - j)*(centerY - j);
         for(int i = 0; i < WIDTH; i++){
+
             float dist =((distX + (centerX - i)*(centerX - i)) * 0.04);
-            float angle = fmod (atan[j][i] + frame  , 3*abs(mysin(frame))+0.1);
-
-
-
+            float angle = fmod (atan[j][i] + frame  , 3*abs(mysin(frame))+0.05);
             float power = mysin(angle * dist * 0.005);
             float tmp = sqrt(dist) * 0.223 + cur_frame + angle*4;
 
-
-
-
-            rgb color;
-            color.r = (1+mysin(tmp)) * 127;
-            color.g = (power+ 1) * 127;
-            color.b = (1+(mycos(tmp*2))) * 127;
             if(checkbox->isChecked()){
+                rgb color;
+                color.r = (1+mysin(tmp)) * 127;
+                color.g = (power+ 1) * 127;
+                color.b = (1+(mycos(tmp*2))) * 127;
+
                 hsv colorH = rgb2hsv(color);
                 colorH.h = fmod(colorH.h+frame , 360);
                 colorH.v = 255;
                 colorH.s = colorH.s*0.5 + 0.5;
                 color = hsv2rgb(colorH);
+
+                ptr[i*4     ] = color.r;
+                ptr[i*4 + 1 ] = color.g;
+                ptr[i*4 + 2 ] = color.b;
+            }else{
+                ptr[i*4     ] = (1+mysin(tmp)) * 127;
+                ptr[i*4 + 1 ] = (power+ 1) * 127;
+                ptr[i*4 + 2 ] = (1+(mycos(tmp*2))) * 127;
             }
-            //ptr[i*4] = (1+mysin(tmp + fast_rand() % 2)) * 127;
-            //ptr[i*4 + 1] = (power+ 1) * 127;
-            //ptr[i*4 + 1] = angle*255/7;
-            //ptr[i*4 + 2] = (1+(mycos(tmp*2))) * 127;
-
-
-            ptr[i*4     ] = 127 + sin(angle)*127;
-            //ptr[i*4 + 1 ] = angle*30;
-
-            ptr[i*4     ] = color.r;
-            ptr[i*4 + 1 ] = color.g;
-            ptr[i*4 + 2 ] = color.b;
-
-
         }
+
         if(makeGlitch->isChecked()){
-            ptr = ptr + WIDTH*4 + (rand() % (GlitchPower*2+1) - GlitchPower)*4; // ГЛИТЧ ЭФФЕКТ
+            ptr = ptr + WIDTH*4 + (rand() % (GlitchPower*2+1) - GlitchPower); // ГЛИТЧ ЭФФЕКТ
         }else{
             ptr = ptr + WIDTH*4;
         }
@@ -276,56 +229,12 @@ void Widget::paintEvent(QPaintEvent *){
 
     QPainter p(this);
     p.drawImage(0,0,*image);
-    //p.drawRect(0,0,WIDTH, HEIGHT);
-    p.setBrush(QBrush(QColor(255,255,255)));
 
-//    unsigned int start_time =  clock(); // начальное время
-
-//    float a = 0;
-//    for(int i = 0; i < 10*1000; i++){
-//        a += sin(i);
-//    }
-//    unsigned int end_time = clock(); // конечное время
-//    unsigned int search_time = end_time - start_time;
-//    qDebug() << search_time << a;
-
-//    start_time =  clock(); // начальное время
-
-//    a = 0;
-//    for(int i = 0; i < 10*1000; i++){
-//        a += mysin(i);
-//    }
-//    end_time = clock(); // конечное время
-//    search_time = end_time - start_time;
-//    qDebug() << search_time << a << "my";
-
-
-//    start_time =  clock(); // начальное время
-
-//    a = 0;
-//    for(int i = 1; i < 10*1000; i++){
-//        a += fast_rand() % i;
-//    }
-//    end_time = clock(); // конечное время
-//    search_time = end_time - start_time;
-//    qDebug() << search_time << a << "my rand";
-
-
-
-
-
-//    for(int i = 0; i < 200; i++){
-//        p.drawEllipse(i*3,300 + 100*mysin(i*0.05),4,4);
-//    }
-
-//    p.setBrush(QColor(255,0,0));
-//    for(int i = 0; i < 200; i++){
-//        p.drawEllipse(i*3,300 + 100*sin(i*0.05),4,4);
-//    }
     p.setBrush(QBrush(QColor(50,50,50)));
     p.setPen(QPen(QColor(35,35,35)));
     p.drawRect(0,0,130,80);
 
     p.setPen(QPen(QColor(255,255,255)));
     p.drawText(5,75,"FPS : " + QString::number(1000/(dt/1000.0)));
+
 }
